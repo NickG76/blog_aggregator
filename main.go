@@ -2,27 +2,27 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
 	"github.com/NickG76/blog_aggregator/internal/config"
 )
+
+
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
-		fmt.Println("Error reading config:", err)
-		os.Exit(1)
+		log.Fatalf("error reading config: %v", err)
+	}
+	fmt.Printf("Read config: %+v\n", cfg)
+
+	err = cfg.SetUser("lane")
+	if err != nil {
+		log.Fatalf("couldn't set current user: %v", err)
 	}
 
-	fmt.Println("Current DB URL:", cfg.Url)
-
-	if len(os.Args) > 1 {
-		newUser := os.Args[1]
-		if err := cfg.SetUser(newUser); err != nil {
-			fmt.Println("Error setting user:", err)
-			os.Exit(1)
-		}
-		fmt.Println("Updated DB URL to:", cfg.Url)
-	} else {
-		fmt.Println("No new user provided, exiting.")
+	cfg, err = config.Read()
+	if err != nil {
+		log.Fatalf("error reading config: %v", err)
 	}
+	fmt.Printf("Read config again: %+v\n", cfg)
+}
 
-} 
