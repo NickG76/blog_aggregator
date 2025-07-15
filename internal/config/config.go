@@ -16,6 +16,20 @@ func Read() (*Config, error) {
 		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 	file += "/.gatorconfig.json"
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		// if file does not exit, create a default Config
+		defaultConfig := Config{Url: "http://localhost:8080"}
+		data, err := json.Marshal(defaultConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal default config: %w", err)
+		}
+		if err := os.WriteFile(file, data, 0644); err != nil {
+			return nil, fmt.Errorf("failed to write default config file: %w", err)
+		}
+		return &defaultConfig, nil
+	}
+	
+
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
