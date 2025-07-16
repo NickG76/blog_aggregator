@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"os"
-	"log"
 	"fmt"
+	"log"
+	"os"
 
-                                                              // GITHUB IMPORTS 
+	// GITHUB IMPORTS
 	"github.com/NickG76/blog_aggregator/internal/config"
 	"github.com/NickG76/blog_aggregator/internal/database"
 	_ "github.com/lib/pq"
@@ -26,35 +27,38 @@ func main() {
 	fmt.Println()
 	fmt.Println()
 
-	cfg, err := config.Read()
+cfg, err := config.Read()
 	if err != nil {
 		log.Fatalf("error reading config: %v", err)
 	}
 
 	db, err := sql.Open("postgres", cfg.DBURL)
 	if err != nil {
-		log.Fatalf("error connecting to the database: %v", err)
+		log.Fatalf("error connecting to db: %v", err)
 	}
 	defer db.Close()
 	dbQueries := database.New(db)
 
 	programState := &state{
-		db: dbQueries,
+		db:  dbQueries,
 		cfg: &cfg,
 	}
 
 	cmds := commands{
 		registeredCommands: make(map[string]func(*state, command) error),
 	}
+
 	cmds.register("register", handlerRegister)
 	cmds.register("login", handlerLogin)
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerListUsers)
 	cmds.register("agg", handlerAgg)
-	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	cmds.register("feeds", handlerListFeeds)
-	cmds.register("follow", handlerFollow)
-	cmds.register("following", handlerListFeedFollows)
+	cmds.register("follow", middlewareLoggedIn(handlerFollow))
+	cmds.register("following", middlewareLoggedIn(handlerListFeedFollows))
+	cmds.register("unfollow", middlewareLoggedIn(handlerUnfollow))
+	cmds.register("browse", middlewareLoggedIn(handlerBrowse))
 
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")
@@ -69,5 +73,14 @@ func main() {
 	}
 }
 
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+		if err != nil {
+			return err
+		}
 
+		return handler(s, cmd, user)
+	}
+}
 
