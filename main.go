@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"log"
+	"fmt"
 
                                                               // GITHUB IMPORTS 
 	"github.com/NickG76/blog_aggregator/internal/config"
@@ -17,6 +18,14 @@ type state struct {
 }
 
 func main() {
+	fmt.Println()
+	fmt.Println("====================================================================================")
+	fmt.Println("============================= BLOG AGGREGATOR ======================================")
+	fmt.Println("====================================================================================")
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
+
 	cfg, err := config.Read()
 	if err != nil {
 		log.Fatalf("error reading config: %v", err)
@@ -37,10 +46,15 @@ func main() {
 	cmds := commands{
 		registeredCommands: make(map[string]func(*state, command) error),
 	}
-	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
+	cmds.register("login", handlerLogin)
 	cmds.register("reset", handlerReset)
-	cmds.register("users", handlerGetUsers)
+	cmds.register("users", handlerListUsers)
+	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handlerListFeeds)
+	cmds.register("follow", handlerFollow)
+	cmds.register("following", handlerListFeedFollows)
 
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")
@@ -54,4 +68,6 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+
 
